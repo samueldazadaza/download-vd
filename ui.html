@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NVR Downloader — Vivotek</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
+<style>
+/* ── Reset & Variables ─────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0a0c10;
+  --surface:   #111419;
+  --card:      #161b22;
+  --border:    #21262d;
+  --border2:   #30363d;
+  --accent:    #f0b429;
+  --accent2:   #e05c00;
+  --green:     #3fb950;
+  --red:       #f85149;
+  --blue:      #58a6ff;
+  --text:      #e6edf3;
+  --muted:     #7d8590;
+  --muted2:    #484f58;
+  --font:      'Syne', sans-serif;
+  --mono:      'JetBrains Mono', monospace;
+  --radius:    8px;
+  --radius-lg: 14px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ── Fondo animado ─────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(240,180,41,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 10% 80%, rgba(224,92,0,0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ────────────────────────────────────────────── */
+.app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+
+/* ── Header ────────────────────────────────────────────── */
+header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px; margin-bottom: 40px;
+}
+.logo { display: flex; align-items: center; gap: 14px; }
+.logo-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: grid; place-items: center;
+  font-size: 22px; flex-shrink: 0;
+  box-shadow: 0 0 24px rgba(240,180,41,0.3);
+}
+.logo h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
+.logo span { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.08em; display: block; margin-top: 3px; }
+.version-badge {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  border: 1px solid var(--border2); border-radius: 20px;
+  padding: 4px 12px; background: var(--surface);
+}
+
+/* ── Sección ───────────────────────────────────────────── */
+.section-label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em;
+  color: var(--accent); text-transform: uppercase;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+}
+.section-label::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ── Card ──────────────────────────────────────────────── */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 28px;
+  margin-bottom: 16px; position: relative; overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+}
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px;
+}
+.card-title {
+  font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); color: #000;
+  font-size: 11px; font-weight: 800; display: grid; place-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Grid de campos ────────────────────────────────────── */
+.field-grid { display: grid; gap: 16px; }
+.field-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.field-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  color: var(--muted); text-transform: uppercase;
+}
+.field input, .field select {
+  background: var(--surface); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--mono); font-size: 13px;
+  border-radius: var(--radius); padding: 10px 14px;
+  width: 100%; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(240,180,41,0.12);
+}
+.field input::placeholder { color: var(--muted2); }
+.field select option { background: var(--card); }
+
+/* ── Radio tipo bus ────────────────────────────────────── */
+.tipo-bus-group { display: flex; gap: 10px; }
+.tipo-radio { flex: 1; }
+.tipo-radio input[type=radio] { display: none; }
+.tipo-radio label {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 14px; border-radius: var(--radius);
+  border: 1px solid var(--border2); background: var(--surface);
+  cursor: pointer; font-size: 13px; font-weight: 600;
+  transition: all 0.2s; user-select: none;
+  font-family: var(--font);
+}
+.tipo-radio input:checked + label {
+  border-color: var(--accent); background: rgba(240,180,41,0.1);
+  color: var(--accent);
+}
+.tipo-radio label:hover { border-color: var(--muted2); }
+
+/* ── Cámaras ───────────────────────────────────────────── */
+.cameras-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.cam-check { display: none; }
+.cam-label {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 14px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border2); background: var(--surface);
+  cursor: pointer; transition: all 0.18s; user-select: none;
+  text-align: center;
+}
+.cam-label:hover { border-color: var(--muted2); transform: translateY(-1px); }
+.cam-icon { font-size: 22px; }
+.cam-sigla { font-size: 13px; font-weight: 700; font-family: var(--mono); }
+.cam-desc { font-size: 10px; color: var(--muted); }
+.cam-num { font-family: var(--mono); font-size: 10px; color: var(--muted2); }
+
+.cam-check:checked + .cam-label {
+  border-color: var(--accent); background: rgba(240,180,41,0.1);
+  box-shadow: 0 0 14px rgba(240,180,41,0.15);
+}
+.cam-check:checked + .cam-label .cam-sigla { color: var(--accent); }
+
+/* ── Botones ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 22px; border-radius: var(--radius);
+  border: none; cursor: pointer; font-family: var(--font);
+  font-size: 13px; font-weight: 700; transition: all 0.18s;
+  text-decoration: none; letter-spacing: 0.02em;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #000; box-shadow: 0 4px 20px rgba(240,180,41,0.25);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(240,180,41,0.35); }
+.btn-secondary {
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border2);
+}
+.btn-secondary:hover { border-color: var(--muted2); background: var(--card); }
+.btn-danger { background: rgba(248,81,73,0.1); color: var(--red); border: 1px solid rgba(248,81,73,0.25); }
+.btn-danger:hover { background: rgba(248,81,73,0.2); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-ghost { background: transparent; color: var(--muted); border: none; padding: 6px 10px; }
+.btn-ghost:hover { color: var(--text); }
+
+/* ── Action bar ────────────────────────────────────────── */
+.action-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 20px 0; border-top: 1px solid var(--border);
+  margin-top: 8px; flex-wrap: wrap;
+}
+
+/* ── Jobs list ─────────────────────────────────────────── */
+.jobs-list { display: flex; flex-direction: column; gap: 10px; }
+.job-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px;
+  display: flex; align-items: center; gap: 16px;
+  transition: border-color 0.2s; cursor: default;
+}
+.job-item:hover { border-color: var(--border2); }
+.job-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--border2); color: var(--muted);
+  font-size: 12px; font-weight: 700; display: grid;
+  place-items: center; flex-shrink: 0; font-family: var(--mono);
+}
+.job-info { flex: 1; min-width: 0; }
+.job-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.job-meta { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.job-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+  font-weight: 600; font-family: var(--mono);
+}
+.badge-buseton { background: rgba(88,166,255,0.15); color: var(--blue); }
+.badge-padron  { background: rgba(63,185,80,0.15);  color: var(--green); }
+.job-cameras { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.cam-pill {
+  font-family: var(--mono); font-size: 10px; padding: 2px 7px;
+  border-radius: 4px; background: var(--border); color: var(--muted);
+}
+.job-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ── Output JSON ───────────────────────────────────────── */
+.json-output {
+  background: #0d1117; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px;
+  font-family: var(--mono); font-size: 12px; line-height: 1.7;
+  color: #c9d1d9; overflow-x: auto; white-space: pre;
+  max-height: 320px; overflow-y: auto;
+}
+.json-key   { color: #79c0ff; }
+.json-str   { color: #a5d6ff; }
+.json-num   { color: #f0b429; }
+.json-bool  { color: #ff7b72; }
+
+/* ── Download btn ──────────────────────────────────────── */
+.download-bar {
+  display: flex; gap: 12px; align-items: center; margin-top: 16px; flex-wrap: wrap;
+}
+.copy-btn-wrap { position: relative; }
+.copied-toast {
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%); background: var(--green);
+  color: #000; font-size: 11px; padding: 4px 10px; border-radius: 6px;
+  white-space: nowrap; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.copied-toast.show { opacity: 1; }
+
+/* ── Historial ─────────────────────────────────────────── */
+.history-list { display: flex; flex-direction: column; gap: 8px; }
+.history-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: 12px; cursor: pointer;
+  transition: border-color 0.2s;
+}
+.history-item:hover { border-color: var(--accent); }
+.history-time { font-family: var(--mono); font-size: 10px; color: var(--muted); flex-shrink: 0; }
+.history-info { flex: 1; min-width: 0; }
+.history-title { font-weight: 700; font-size: 12px; margin-bottom: 2px; }
+.history-meta  { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.history-load  { font-size: 10px; color: var(--accent); font-weight: 600; flex-shrink: 0; }
+.empty-state { text-align: center; color: var(--muted); font-size: 13px; padding: 32px; }
+.empty-state .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
+
+/* ── Flatpickr overrides ───────────────────────────────── */
+.flatpickr-calendar {
+  background: var(--card) !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+  font-family: var(--mono) !important;
+}
+.flatpickr-day { color: var(--text) !important; border-radius: var(--radius) !important; }
+.flatpickr-day:hover { background: var(--border) !important; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover {
+  background: var(--accent) !important; color: #000 !important; border-color: var(--accent) !important;
+}
+.flatpickr-day.today { border-color: var(--muted2) !important; }
+.flatpickr-months { background: var(--surface) !important; border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important; }
+.flatpickr-month, .flatpickr-current-month, .flatpickr-monthDropdown-months,
+.flatpickr-prev-month, .flatpickr-next-month, .numInputWrapper span { color: var(--text) !important; fill: var(--text) !important; }
+.flatpickr-weekday { color: var(--muted) !important; }
+.flatpickr-time { border-top: 1px solid var(--border) !important; background: var(--surface) !important; }
+.flatpickr-time input, .flatpickr-time .flatpickr-am-pm { color: var(--text) !important; }
+.numInputWrapper:hover { background: var(--border) !important; }
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted2); }
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .field-grid.cols-2, .field-grid.cols-3 { grid-template-columns: 1fr; }
+  header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .cameras-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── Animaciones ───────────────────────────────────────── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.card { animation: fadeIn 0.35s ease both; }
+
+/* ── Divider ───────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 32px 0; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">📹</div>
+      <div>
+        <h1>NVR Downloader</h1>
+        <span>Vivotek NV9311P-A / NV9411P-A</span>
+      </div>
+    </div>
+    <div class="version-badge">v2.0 · jobs.json generator</div>
+  </header>
+
+  <!-- FORMULARIO -->
+  <div class="section-label">Nuevo trabajo</div>
+
+  <div class="card" style="animation-delay:0.05s">
+    <div class="card-header">
+      <div class="card-title"><span class="num">1</span>Identificación del bus</div>
+    </div>
+    <div class="field-grid cols-3">
+      <div class="field">
+        <label>Bus ID</label>
+        <input type="text" id="bus_id" placeholder="Z67-4032" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Descripción / Evento</label>
+        <input type="text" id="descripcion" placeholder="ACCIDENTES" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Tipo de bus</label>
+        <div class="tipo-bus-group">
+          <div class="tipo-radio">
+            <input type="radio" name="tipo_bus" id="tipo_buseton" value="BUSETON" checked>
+            <label for="tipo_buseton">🚌 BUSETON</label>
+          </div>
+          <div class="tipo-radio">
+            <input type="radio" name="tipo_bus" id="tipo_padron" value="PADRON">
+            <label for="tipo_padron">🚍 PADRÓN</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="animation-delay:0.1s">
+    <div class="card-header">
+      <div class="card-title"><span class="num">2</span>Conexión NVR</div>
+    </div>
+    <div class="field-grid cols-3">
+      <div class="field">
+        <label>IP del NVR</label>
+        <input type="text" id="nvr_ip" placeholder="172.23.10.240" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Usuario</label>
+        <input type="text" id="nvr_user" placeholder="admin" value="admin" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input type="password" id="nvr_pass" placeholder="••••••••" autocomplete="off">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="animation-delay:0.15s">
+    <div class="card-header">
+      <div class="card-title"><span class="num">3</span>Fecha, hora y duración</div>
+    </div>
+    <div class="field-grid cols-3">
+      <div class="field">
+        <label>Fecha del evento</label>
+        <input type="text" id="fecha" placeholder="YYYY-MM-DD" readonly>
+      </div>
+      <div class="field">
+        <label>Hora de inicio</label>
+        <input type="text" id="hora_inicio" placeholder="HH:MM:SS" readonly>
+      </div>
+      <div class="field">
+        <label>Duración</label>
+        <select id="duracion_minutos">
+          <option value="1">1 minuto</option>
+          <option value="3">3 minutos</option>
+          <option value="5" selected>5 minutos</option>
+          <option value="10">10 minutos</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="animation-delay:0.2s">
+    <div class="card-header">
+      <div class="card-title"><span class="num">4</span>Cámaras a descargar</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="selectAllCams()">Todas</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearAllCams()">Ninguna</button>
+      </div>
+    </div>
+    <div class="cameras-grid" id="cameras-grid">
+      <!-- Se genera con JS según tipo_bus -->
+    </div>
+  </div>
+
+  <!-- Botones acción -->
+  <div class="action-bar">
+    <button class="btn btn-primary" onclick="addJob()">
+      ＋ Agregar trabajo
+    </button>
+    <button class="btn btn-secondary" onclick="clearForm()">
+      ↺ Limpiar formulario
+    </button>
+    <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)" id="job-count-label"></span>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- LISTA DE TRABAJOS -->
+  <div class="section-label">Trabajos añadidos</div>
+  <div id="jobs-list" class="jobs-list">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div>Aún no hay trabajos.<br>Completa el formulario y haz clic en <strong>Agregar trabajo</strong>.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- OUTPUT JSON -->
+  <div class="section-label">jobs.json generado</div>
+  <div class="card" style="animation-delay:0.25s">
+    <pre class="json-output" id="json-output"><span style="color:var(--muted)">// Aquí aparecerá el JSON cuando agregues trabajos</span></pre>
+    <div class="download-bar">
+      <button class="btn btn-primary" onclick="downloadJSON()" id="btn-download" disabled>
+        ⬇ Descargar jobs.json
+      </button>
+      <div class="copy-btn-wrap">
+        <button class="btn btn-secondary" onclick="copyJSON()" id="btn-copy" disabled>
+          ⎘ Copiar JSON
+        </button>
+        <div class="copied-toast" id="copied-toast">¡Copiado!</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="clearAllJobs()" id="btn-clear-all" disabled>
+        🗑 Limpiar todo
+      </button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- HISTORIAL -->
+  <div class="section-label">Historial (localStorage)</div>
+  <div id="history-list" class="history-list">
+    <div class="empty-state">
+      <div class="empty-icon">🕓</div>
+      <div>El historial de sessions anteriores aparecerá aquí.</div>
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <button class="btn btn-ghost btn-sm" onclick="clearHistory()">🗑 Borrar historial</button>
+  </div>
+
+</div><!-- .app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATOS DE CÁMARAS
+// ═══════════════════════════════════════════════════════════
+
+const CAMERAS = {
+  BUSETON: [
+    { sigla: "BSF", canal: 0, desc: "Frontal",   icon: "🔭" },
+    { sigla: "BSO", canal: 1, desc: "Operador",  icon: "👤" },
+    { sigla: "BS1", canal: 2, desc: "Interna 1", icon: "🪑" },
+    { sigla: "BS2", canal: 5, desc: "Interna 2", icon: "🪑" },
+    { sigla: "BST", canal: 6, desc: "Trasera",   icon: "🔭" },
+  ],
+  PADRON: [
+    { sigla: "PDF", canal: 0, desc: "Frontal",   icon: "🔭" },
+    { sigla: "PDO", canal: 1, desc: "Operador",  icon: "👤" },
+    { sigla: "PD1", canal: 2, desc: "Interna 1", icon: "🪑" },
+    { sigla: "PD2", canal: 3, desc: "Interna 2", icon: "🪑" },
+    { sigla: "PD3", canal: 4, desc: "Interna 3", icon: "🪑" },
+    { sigla: "PD4", canal: 5, desc: "Interna 4", icon: "🪑" },
+    { sigla: "PDT", canal: 6, desc: "Trasera",   icon: "🔭" },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════════════════
+
+let jobs = JSON.parse(localStorage.getItem("nvr_jobs") || "[]");
+
+// ═══════════════════════════════════════════════════════════
+// FLATPICKR — Calendario y hora
+// ═══════════════════════════════════════════════════════════
+
+flatpickr.localize(flatpickr.l10ns.es);
+
+const fpFecha = flatpickr("#fecha", {
+  dateFormat: "Y-m-d",
+  defaultDate: "today",
+  locale: "es",
+  disableMobile: true,
+});
+
+const fpHora = flatpickr("#hora_inicio", {
+  enableTime: true,
+  noCalendar: true,
+  dateFormat: "H:i:S",
+  time_24hr: true,
+  defaultDate: new Date(),
+  minuteIncrement: 1,
+  secondIncrement: 1,
+  disableMobile: true,
+});
+
+// ═══════════════════════════════════════════════════════════
+// RENDER CÁMARAS
+// ═══════════════════════════════════════════════════════════
+
+function renderCameras() {
+  const tipo = document.querySelector('input[name="tipo_bus"]:checked').value;
+  const cams = CAMERAS[tipo] || CAMERAS.BUSETON;
+  const grid = document.getElementById("cameras-grid");
+  grid.innerHTML = cams.map(c => `
+    <div>
+      <input class="cam-check" type="checkbox" id="cam_${c.canal}" value="${c.canal}" data-sigla="${c.sigla}" checked>
+      <label class="cam-label" for="cam_${c.canal}">
+        <span class="cam-icon">${c.icon}</span>
+        <span class="cam-sigla">${c.sigla}</span>
+        <span class="cam-desc">${c.desc}</span>
+        <span class="cam-num">ch.${c.canal}</span>
+      </label>
+    </div>
+  `).join("");
+}
+
+document.querySelectorAll('input[name="tipo_bus"]').forEach(r => {
+  r.addEventListener("change", renderCameras);
+});
+
+function selectAllCams() {
+  document.querySelectorAll(".cam-check").forEach(c => c.checked = true);
+}
+function clearAllCams() {
+  document.querySelectorAll(".cam-check").forEach(c => c.checked = false);
+}
+
+// ═══════════════════════════════════════════════════════════
+// FORMULARIO
+// ═══════════════════════════════════════════════════════════
+
+function getFormData() {
+  const tipo = document.querySelector('input[name="tipo_bus"]:checked').value;
+  const selectedCams = [...document.querySelectorAll(".cam-check:checked")]
+    .map(c => parseInt(c.value));
+
+  return {
+    descripcion:       document.getElementById("descripcion").value.trim().toUpperCase() || "EVENTO",
+    bus_id:            document.getElementById("bus_id").value.trim(),
+    tipo_bus:          tipo,
+    nvr_ip:            document.getElementById("nvr_ip").value.trim(),
+    nvr_user:          document.getElementById("nvr_user").value.trim(),
+    nvr_pass:          document.getElementById("nvr_pass").value,
+    fecha:             document.getElementById("fecha").value,
+    hora_inicio:       document.getElementById("hora_inicio").value || "00:00:00",
+    duracion_minutos:  parseInt(document.getElementById("duracion_minutos").value),
+    formato:           "3gp",
+    camaras:           selectedCams,
+  };
+}
+
+function validateForm(data) {
+  if (!data.bus_id)    { alert("⚠ Ingresa el Bus ID."); return false; }
+  if (!data.nvr_ip)    { alert("⚠ Ingresa la IP del NVR."); return false; }
+  if (!data.nvr_pass && !data.nvr_user) { alert("⚠ Ingresa las credenciales del NVR."); return false; }
+  if (!data.fecha)     { alert("⚠ Selecciona la fecha."); return false; }
+  if (!data.hora_inicio) { alert("⚠ Selecciona la hora."); return false; }
+  if (data.camaras.length === 0) { alert("⚠ Selecciona al menos una cámara."); return false; }
+  return true;
+}
+
+function addJob() {
+  const data = getFormData();
+  if (!validateForm(data)) return;
+
+  data._added = new Date().toISOString();
+  jobs.push(data);
+
+  saveJobs();
+  renderJobsList();
+  renderJSON();
+  updateButtons();
+  updateJobCount();
+
+  // Animación de confirmación
+  const btn = document.querySelector('.btn-primary');
+  btn.textContent = "✓ Agregado";
+  setTimeout(() => { btn.innerHTML = "＋ Agregar trabajo"; }, 1200);
+}
+
+function removeJob(idx) {
+  jobs.splice(idx, 1);
+  saveJobs();
+  renderJobsList();
+  renderJSON();
+  updateButtons();
+  updateJobCount();
+}
+
+function clearForm() {
+  document.getElementById("bus_id").value = "";
+  document.getElementById("descripcion").value = "";
+  document.getElementById("nvr_ip").value = "";
+  document.getElementById("nvr_pass").value = "";
+  fpFecha.setDate("today");
+  fpHora.setDate(new Date());
+  document.getElementById("duracion_minutos").value = "5";
+  document.querySelector('input[value="BUSETON"]').checked = true;
+  renderCameras();
+}
+
+function clearAllJobs() {
+  if (!confirm("¿Borrar todos los trabajos de esta sesión?")) return;
+
+  // Guardar en historial antes de borrar
+  if (jobs.length > 0) saveToHistory(jobs);
+
+  jobs = [];
+  saveJobs();
+  renderJobsList();
+  renderJSON();
+  updateButtons();
+  updateJobCount();
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER LISTA DE TRABAJOS
+// ═══════════════════════════════════════════════════════════
+
+function renderJobsList() {
+  const el = document.getElementById("jobs-list");
+  if (jobs.length === 0) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div>Aún no hay trabajos.<br>Completa el formulario y haz clic en <strong>Agregar trabajo</strong>.</div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = jobs.map((j, i) => {
+    const badgeClass = j.tipo_bus === "PADRON" ? "badge-padron" : "badge-buseton";
+    const cams = (j.camaras || []).map(c => `<span class="cam-pill">ch.${c}</span>`).join("");
+    return `
+    <div class="job-item" style="animation:fadeIn 0.25s ease both">
+      <div class="job-num">${i + 1}</div>
+      <div class="job-info">
+        <div class="job-title">
+          ${j.bus_id || j.nvr_ip}
+          <span class="job-badge ${badgeClass}">${j.tipo_bus || "GENERICO"}</span>
+          <span style="color:var(--muted);font-size:12px;font-weight:400">${j.descripcion}</span>
+        </div>
+        <div class="job-meta">${j.fecha} · ${j.hora_inicio} · ${j.duracion_minutos} min · ${j.nvr_ip}</div>
+        <div class="job-cameras">${cams}</div>
+      </div>
+      <div class="job-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadJob(${i})" title="Editar">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="removeJob(${i})" title="Eliminar">✕</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function loadJob(idx) {
+  const j = jobs[idx];
+  document.getElementById("bus_id").value       = j.bus_id || "";
+  document.getElementById("descripcion").value  = j.descripcion || "";
+  document.getElementById("nvr_ip").value       = j.nvr_ip || "";
+  document.getElementById("nvr_user").value     = j.nvr_user || "admin";
+  document.getElementById("nvr_pass").value     = j.nvr_pass || "";
+  document.getElementById("duracion_minutos").value = String(j.duracion_minutos || 5);
+
+  // Tipo de bus
+  const tipoInput = document.querySelector(`input[value="${j.tipo_bus || 'BUSETON'}"]`);
+  if (tipoInput) { tipoInput.checked = true; renderCameras(); }
+
+  // Fecha y hora
+  if (j.fecha) fpFecha.setDate(j.fecha);
+  if (j.hora_inicio) fpHora.setDate(j.hora_inicio, true);
+
+  // Cámaras (después de renderCameras)
+  setTimeout(() => {
+    document.querySelectorAll(".cam-check").forEach(c => {
+      c.checked = (j.camaras || []).includes(parseInt(c.value));
+    });
+  }, 50);
+
+  // Scroll al formulario
+  document.querySelector(".card").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER JSON
+// ═══════════════════════════════════════════════════════════
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      if (/^".*":$/.test(m)) return `<span class="json-key">${m}</span>`;
+      if (/^"/.test(m))      return `<span class="json-str">${m}</span>`;
+      if (/true|false/.test(m)) return `<span class="json-bool">${m}</span>`;
+      return `<span class="json-num">${m}</span>`;
+    });
+}
+
+function renderJSON() {
+  const out = document.getElementById("json-output");
+  if (jobs.length === 0) {
+    out.innerHTML = `<span style="color:var(--muted)">// Aquí aparecerá el JSON cuando agregues trabajos</span>`;
+    return;
+  }
+  // Limpiar campos internos antes de exportar
+  const clean = jobs.map(({ _added, ...j }) => j);
+  const jsonStr = JSON.stringify(clean, null, 2);
+  out.innerHTML = syntaxHighlight(jsonStr);
+}
+
+// ═══════════════════════════════════════════════════════════
+// DESCARGA / COPIA
+// ═══════════════════════════════════════════════════════════
+
+function getCleanJSON() {
+  const clean = jobs.map(({ _added, ...j }) => j);
+  return JSON.stringify(clean, null, 2);
+}
+
+function downloadJSON() {
+  if (jobs.length === 0) return;
+  const blob = new Blob([getCleanJSON()], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement("a"), { href: url, download: "jobs.json" });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  // Guardar en historial al descargar
+  saveToHistory(jobs);
+  renderHistory();
+}
+
+function copyJSON() {
+  if (jobs.length === 0) return;
+  navigator.clipboard.writeText(getCleanJSON()).then(() => {
+    const toast = document.getElementById("copied-toast");
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 1800);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// PERSISTENCIA — localStorage
+// ═══════════════════════════════════════════════════════════
+
+function saveJobs() {
+  localStorage.setItem("nvr_jobs", JSON.stringify(jobs));
+}
+
+function saveToHistory(jobsList) {
+  const history = JSON.parse(localStorage.getItem("nvr_history") || "[]");
+  history.unshift({
+    ts:    new Date().toISOString(),
+    count: jobsList.length,
+    buses: jobsList.map(j => j.bus_id || j.nvr_ip).join(", "),
+    fecha: jobsList[0]?.fecha,
+    jobs:  jobsList.map(({ _added, ...j }) => j),
+  });
+  // Mantener solo los últimos 20
+  localStorage.setItem("nvr_history", JSON.stringify(history.slice(0, 20)));
+}
+
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem("nvr_history") || "[]");
+  const el = document.getElementById("history-list");
+
+  if (history.length === 0) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🕓</div>
+      <div>El historial de sesiones anteriores aparecerá aquí.</div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = history.map((h, i) => {
+    const d = new Date(h.ts);
+    const dateStr = d.toLocaleDateString("es-CO", { day:"2-digit", month:"short", year:"numeric" });
+    const timeStr = d.toLocaleTimeString("es-CO", { hour:"2-digit", minute:"2-digit" });
+    return `
+    <div class="history-item" onclick="loadFromHistory(${i})">
+      <div class="history-time">${dateStr}<br>${timeStr}</div>
+      <div class="history-info">
+        <div class="history-title">${h.buses}</div>
+        <div class="history-meta">${h.count} trabajo(s) · ${h.fecha || "sin fecha"}</div>
+      </div>
+      <div class="history-load">Cargar →</div>
+    </div>`;
+  }).join("");
+}
+
+function loadFromHistory(idx) {
+  const history = JSON.parse(localStorage.getItem("nvr_history") || "[]");
+  const entry = history[idx];
+  if (!entry) return;
+  if (!confirm(`¿Cargar ${entry.count} trabajo(s) de ${new Date(entry.ts).toLocaleString("es-CO")}?\n\nEsto reemplazará los trabajos actuales.`)) return;
+  jobs = entry.jobs.map(j => ({ ...j, _added: entry.ts }));
+  saveJobs();
+  renderJobsList();
+  renderJSON();
+  updateButtons();
+  updateJobCount();
+}
+
+function clearHistory() {
+  if (!confirm("¿Borrar todo el historial guardado?")) return;
+  localStorage.removeItem("nvr_history");
+  renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS UI
+// ═══════════════════════════════════════════════════════════
+
+function updateButtons() {
+  const hasJobs = jobs.length > 0;
+  document.getElementById("btn-download").disabled  = !hasJobs;
+  document.getElementById("btn-copy").disabled      = !hasJobs;
+  document.getElementById("btn-clear-all").disabled = !hasJobs;
+}
+
+function updateJobCount() {
+  const lbl = document.getElementById("job-count-label");
+  lbl.textContent = jobs.length > 0 ? `${jobs.length} trabajo(s) en cola` : "";
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+
+renderCameras();
+renderJobsList();
+renderJSON();
+renderHistory();
+updateButtons();
+updateJobCount();
+</script>
+</body>
+</html>
