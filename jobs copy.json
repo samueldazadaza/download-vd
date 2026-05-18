@@ -1,0 +1,12 @@
+[
+  {
+    "descripcion": "COMUNICADOS",
+    "bus_id": "Z63-4001",
+    "nvr_sid": "5482b3efc8d4a696ebf2acbc3cfd97f0",
+    "fecha": "2026-05-17",
+    "hora_inicio": "22:00:00",
+    "duracion_minutos": 1,
+    "formato": "3gp",
+    "camaras": [0]
+  }
+]

@@ -1,0 +1,15 @@
+ [
+
+    {
+      "descripcion":      "ACCIDENTES",
+      "bus_id":           "Z67-4027",
+      "tipo_bus":         "BUSETON",
+      "nvr_user":         "admin",
+      "nvr_pass":         "M4TT0/@/STS/2026$",
+      "fecha":            "2026-05-15",
+      "hora_inicio":      "15:43:00",
+      "duracion_minutos": 10,
+      "formato":          "3gp",
+      "camaras":          [5,6]
+    }
+  ]
